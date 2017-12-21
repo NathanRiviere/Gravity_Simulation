@@ -36,38 +36,9 @@ void field::spawn_particle(int button, int state, int x, int y)
 			if (state == GLUT_DOWN) break;
 			else
 			{
-				int x_f = (int)std::floor<int>(x / (2 * RADIUS));
-				int y_f = (int)std::floor<int>(y / (2 * RADIUS));
-				int x_c = (int)std::ceil<int>(x / (2 * RADIUS));
-				int y_c = (int)std::ceil<int>(y / (2 * RADIUS));
-
-				float x_orgin = ((x / (2 * RADIUS)) - x_f) * 10;
-				float y_orgin = ((y / (2 * RADIUS)) - y_f) * 10;
-
-				if(x_orgin == 0)
-				{
-					// x stays the same
-				}  else if (x_orgin < 5)
-				{
-					x_orgin = x_f;
-				} else
-				{
-					x_orgin = x_c;
-				}
-
-				if (y_orgin == 0)
-				{
-					// y stays the same
-				}
-				else if (y_orgin < 5)
-				{
-					y_orgin = y_f;
-				}
-				else
-				{
-					y_orgin = y_c;
-				}
-
+				float x_origin, y_origin;
+				int x_f, y_f, x_c, y_c;
+				find_mass_centers(x, y, &x_origin, &y_origin, &x_f, &y_f, &x_c, &y_c);
 
 				if (cells_[x_f][y_f].is_occupied | cells_[x_f][y_c].is_occupied | 
 					cells_[x_c][y_f].is_occupied | cells_[x_c][y_c].is_occupied) {
@@ -84,7 +55,7 @@ void field::spawn_particle(int button, int state, int x, int y)
 				std::cout << "Particle created" << std::endl;
 				
 #endif
-				add_space_curvature(x_orgin, y_orgin, MASS);
+				add_space_curvature(x_origin, y_origin, MASS);
 
 				cells_[x_f][y_f].is_occupied = cells_[x_f][y_c].is_occupied =
 					cells_[x_c][y_f].is_occupied = cells_[x_c][y_c].is_occupied = true;
@@ -98,7 +69,6 @@ void field::spawn_particle(int button, int state, int x, int y)
 
 void field::display()
 {
-	move_particles();
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -119,6 +89,7 @@ void field::display()
 	}
 
 	glFlush();
+	
 }
 
 void field::keyboard_input(unsigned char key, int x, int y)
@@ -143,6 +114,7 @@ void field::add_space_curvature(int x, int y, int mass)
 				else
 				{
 					cells_[i][j].gravity += mass / grow;
+
 #if DEBUG == 1 
 					std::cout << "gravity at (" << i << ", " << j << ") is " << (float) mass / grow << std::endl;
 					
@@ -153,7 +125,64 @@ void field::add_space_curvature(int x, int y, int mass)
 	}
 }
 
-void field::move_particles()
+void field::update_particles()
 {
-	
+	for(auto &n : particles_)
+	{
+		// update postion from velocity
+		std::cout << "(PRE)  x: " << n.pos_x << " y: " << n.pos_y << std::endl;
+		n.pos_x += n.vel_x_;
+		n.pos_y += n.vel_y_;
+		std::cout << "(POST)  x: " << n.pos_x << " y: " << n.pos_y << std::endl;
+
+		// update velocity from acceleration
+
+		n.vel_x_ += n.acl_x_;
+		n.vel_y_ += n.acl_y_;
+
+		// update acceleration from curvature
+
+
+
+
+	}
+
+
+}
+
+void field::find_mass_centers(int x, int y, float *x_origin, float *y_origin, int *xf, int *yf, int *xc, int *yc)
+{
+	*xf = (int)std::floor<int>(x / (2 * RADIUS));
+	*yf = (int)std::floor<int>(y / (2 * RADIUS));
+	*xc = (int)std::ceil<int>(x / (2 * RADIUS));
+	*yc = (int)std::ceil<int>(y / (2 * RADIUS));
+
+	*x_origin = ((x / (2 * RADIUS)) - *xf) * 10;
+	*y_origin = ((y / (2 * RADIUS)) - *yf) * 10;
+
+	if (*x_origin == 0)
+	{
+		// x stays the same
+	}
+	else if (*x_origin < 5)
+	{
+		*x_origin = *xf;
+	}
+	else
+	{
+		*x_origin = *xc;
+	}
+
+	if (*y_origin == 0)
+	{
+		// y stays the same
+	}
+	else if (*y_origin < 5)
+	{
+		*y_origin = *yf;
+	}
+	else
+	{
+		*y_origin = *yc;
+	}
 }

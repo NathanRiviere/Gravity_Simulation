@@ -14,10 +14,11 @@ class field
 		void display();
 		void keyboard_input(unsigned char key, int x, int y);
 		void add_space_curvature(int x, int y, int mass);
-		void move_particles();
+		void update_particles();
+		void find_mass_centers(int x, int y, float *x_origin, float *y_origin, int *xf, int *yf, int *xc, int *yc);
 
 	private:
-	
+
 	struct cell
 	{
 		int length_px;

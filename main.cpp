@@ -7,6 +7,7 @@
 void display();
 void mouse(int button, int state, int x, int y);
 void keyboard(unsigned char key, int x, int y);
+void tick(int i);
 
 field *space = nullptr;
 
@@ -22,7 +23,6 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowSize(window_size, window_size);
 	glutInitWindowPosition(50, 50);
-
 	auto win = glutCreateWindow("Gravity_Simulation Application");
 
 	/*                  SET UP MATRICES													 */
@@ -34,12 +34,14 @@ int main(int argc, char **argv)
 
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
-	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glFlush();
 
+	tick(0);
+
 	glutMainLoop();
 
+	delete space;
 
 }
 
@@ -56,4 +58,10 @@ void mouse(int button, int state, int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
 	space->keyboard_input(key, x, y);
+}
+
+void tick(int i)
+{
+    space->update_particles();
+	glutTimerFunc(1, tick, 0);
 }
