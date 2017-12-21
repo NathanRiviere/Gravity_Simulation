@@ -1,5 +1,4 @@
 #pragma once
-#include <cmath>
 #include "field.h"
 #include <ctime>
 #include <iostream>
@@ -63,5 +62,5 @@ void keyboard(unsigned char key, int x, int y)
 void tick(int i)
 {
     space->update_particles();
-	glutTimerFunc(1, tick, 0);
+	glutTimerFunc(33, tick, 0);
 }

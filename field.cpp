@@ -36,12 +36,11 @@ void field::spawn_particle(int button, int state, int x, int y)
 			if (state == GLUT_DOWN) break;
 			else
 			{
-				float x_origin, y_origin;
+				int x_origin, y_origin;
 				int x_f, y_f, x_c, y_c;
 				find_mass_centers(x, y, &x_origin, &y_origin, &x_f, &y_f, &x_c, &y_c);
 
-				if (cells_[x_f][y_f].is_occupied | cells_[x_f][y_c].is_occupied | 
-					cells_[x_c][y_f].is_occupied | cells_[x_c][y_c].is_occupied) {
+				if (cells_[(int)y_origin][(int)x_origin].is_occupied) {
 #if DEBUG == 1 
 					std::cout << "Space occupied" << std::endl;
 				
@@ -57,8 +56,7 @@ void field::spawn_particle(int button, int state, int x, int y)
 #endif
 				add_space_curvature(x_origin, y_origin, MASS);
 
-				cells_[x_f][y_f].is_occupied = cells_[x_f][y_c].is_occupied =
-					cells_[x_c][y_f].is_occupied = cells_[x_c][y_c].is_occupied = true;
+				cells_[y_origin][x_origin].is_occupied = true;
 
 				break;
 			}
@@ -69,7 +67,6 @@ void field::spawn_particle(int button, int state, int x, int y)
 
 void field::display()
 {
-
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -106,17 +103,17 @@ void field::add_space_curvature(int x, int y, int mass)
 		{
 			for (int j = -1 * grow + x; j <= grow + x; j++)
 			{
-				if (i < 0 | i > window_size_ - 1) break;
-				if (j < 0) continue;
-				if (j > window_size_ - 1) break;
+				if ( i + y < 0 | i + y > (window_size_ / (RADIUS * 2)) - 1) break;
+				if (j + x < 0) continue;
+				if (j + x > (window_size_ / (RADIUS * 2)) - 1) break;
 
-				if (i == 0 && j == 0) cells_[i][j].gravity = 0;
+				if (i == 0 && j == 0) cells_[i][j].gravity = mass;
 				else
 				{
-					cells_[i][j].gravity += mass / grow;
+					cells_[i][j].gravity += (float) mass / (grow * 10);
 
 #if DEBUG == 1 
-					std::cout << "gravity at (" << i << ", " << j << ") is " << (float) mass / grow << std::endl;
+					std::cout << "gravity at (" << i << ", " << j << ") is " << (float) cells_[i][j].gravity << std::endl;
 					
 #endif
 				} 
@@ -127,62 +124,161 @@ void field::add_space_curvature(int x, int y, int mass)
 
 void field::update_particles()
 {
-	for(auto &n : particles_)
+	std::cout << particles_.size() << std::endl;
+
+	for (auto &p : particles_)
 	{
 		// update postion from velocity
-		std::cout << "(PRE)  x: " << n.pos_x << " y: " << n.pos_y << std::endl;
-		n.pos_x += n.vel_x_;
-		n.pos_y += n.vel_y_;
-		std::cout << "(POST)  x: " << n.pos_x << " y: " << n.pos_y << std::endl;
+		if (!(p.pos_x + p.vel_x_ >= window_size_ | p.pos_x + p.vel_x_  <= 0)) {
+			p.pos_x += p.vel_x_;
+		}
+		if (!(p.pos_y + p.vel_y_  >= window_size_ | p.pos_y + p.vel_y_ <= 0)) {
+			p.pos_y += p.vel_y_;
+		}
 
 		// update velocity from acceleration
-
-		n.vel_x_ += n.acl_x_;
-		n.vel_y_ += n.acl_y_;
+		if (!(p.vel_x_ + p.acl_x_ > 9 | p.vel_x_ + p.acl_x_ < -9)) {
+			p.vel_x_ += p.acl_x_;
+		}
+		if (!(p.vel_y_ + p.acl_y_ > 9 | p.vel_y_ + p.acl_y_ < -9)) {
+			p.vel_y_ += p.acl_y_;
+		}
 
 		// update acceleration from curvature
 
+		int x_origin, y_origin;
+		float left_acl, right_acl, up_acl, down_acl;
+		left_acl = right_acl = up_acl = down_acl = 0;
+		bool left_z, right_z, up_z, down_z;
+		left_z = right_z = up_z = down_z = false;
+		int x_f, y_f, x_c, y_c;
 
+		find_mass_centers(p.pos_x, p.pos_y, &x_origin, &y_origin, &x_f, &y_f, &x_c, &y_c);
 
+		if (x_origin - 1 < 0) {
+			left_z = true;
+		}
+		if (x_origin + 1 > ((window_size_ / (RADIUS * 2)) - 1))
+		{
+			right_z = true;
+		}
+		if (y_origin - 1 < 0) {
+			up_z = true;
+		}
+		if (y_origin + 1 > ((window_size_ / (RADIUS * 2)) - 1))
+		{
+			down_z = true;
+		}
+		if (!left_z) {
+			left_acl += cells_[(int)y_origin][(int)x_origin - 1].gravity;
+			if (!down_z) left_acl += cells_[(int)y_origin + 1][(int)x_origin - 1].gravity;
+			if (!up_z) left_acl += cells_[(int)y_origin - 1][(int)x_origin - 1].gravity;
+		}
 
+		if (!right_z)
+		{
+			right_acl += cells_[(int)y_origin][(int)x_origin + 1].gravity;
+			if (!down_z) right_acl += cells_[(int)y_origin + 1][(int)x_origin + 1].gravity;
+			if (!up_z) right_acl += cells_[(int)y_origin - 1][(int)x_origin + 1].gravity;
+		}
+
+		if(!down_z)
+		{
+			down_acl += cells_[(int) y_origin + 1][(int)x_origin].gravity;
+			if (!right_z) down_acl += cells_[(int) y_origin + 1][(int) x_origin + 1].gravity;
+			if (!left_z) down_acl += cells_[(int) y_origin + 1][(int) x_origin - 1].gravity;
+		}
+		if (!up_z)
+		{
+			up_acl += cells_[(int)y_origin - 1][(int)x_origin].gravity;
+			if (!right_z) up_acl += cells_[(int)y_origin - 1][(int)x_origin + 1].gravity;
+			if (!left_z) up_acl += cells_[(int)y_origin - 1][(int)x_origin - 1].gravity;
+		}
+
+		if (p.acl_x_ + right_acl - left_acl > 5 | p.acl_x_ + right_acl - left_acl < -5) continue;
+		if (p.acl_y_ + down_acl - up_acl > 5 | p.acl_y_ + down_acl - up_acl < -5) continue;
+		p.acl_x_ += right_acl - left_acl;
+		p.acl_y_ += down_acl - up_acl;
 	}
 
+	display();
 
 }
 
-void field::find_mass_centers(int x, int y, float *x_origin, float *y_origin, int *xf, int *yf, int *xc, int *yc)
+void field::find_mass_centers(int x, int y, int *x_origin, int *y_origin, int *xf, int *yf, int *xc, int *yc)
 {
-	*xf = (int)std::floor<int>(x / (2 * RADIUS));
-	*yf = (int)std::floor<int>(y / (2 * RADIUS));
-	*xc = (int)std::ceil<int>(x / (2 * RADIUS));
-	*yc = (int)std::ceil<int>(y / (2 * RADIUS));
+	int half = RADIUS;
 
-	*x_origin = ((x / (2 * RADIUS)) - *xf) * 10;
-	*y_origin = ((y / (2 * RADIUS)) - *yf) * 10;
-
-	if (*x_origin == 0)
+	if(x % (RADIUS * 2) == 0)
 	{
-		// x stays the same
+		*x_origin = (x / (RADIUS * 2));
+		if (*x_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*x_origin = *x_origin - 1;
+		}
+		else if (*x_origin <= 0)
+		{
+			*x_origin = *x_origin + 1;
+		}
 	}
-	else if (*x_origin < 5)
+	else if(x % (RADIUS * 2) < half)
 	{
-		*x_origin = *xf;
+		*x_origin = x / (RADIUS * 2);
+		if(*x_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*x_origin = *x_origin - 1;
+		} else if (*x_origin <= 0)
+		{
+			*x_origin = *x_origin + 1;
+		}
+	} else
+	{
+		*x_origin = (x / (RADIUS * 2)) + 1;
+		if (*x_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*x_origin = *x_origin - 1;
+		}
+		else if (*x_origin <= 0)
+		{
+			*x_origin = *x_origin + 1;
+		}
+	}
+
+	if (y % (RADIUS * 2) == 0)
+	{
+		*y_origin = (y / (RADIUS * 2));
+		if (*y_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*y_origin = *y_origin - 1;
+		}
+		else if (*y_origin <= 0)
+		{
+			*y_origin = *y_origin + 1;
+		}
+	}
+	else if (y % (RADIUS * 2) < half)
+	{
+		*y_origin = y / (RADIUS * 2);
+		if (*y_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*y_origin = *y_origin - 1;
+		}
+		else if (*y_origin <= 0)
+		{
+			*y_origin = *y_origin + 1;
+		}
 	}
 	else
 	{
-		*x_origin = *xc;
+		*y_origin = (y / (RADIUS * 2)) + 1;
+		if (*y_origin >= (window_size_ / (RADIUS * 2)))
+		{
+			*y_origin = *y_origin - 1;
+		}
+		else if (*y_origin <= 0)
+		{
+			*y_origin = *y_origin + 1;
+		}
 	}
 
-	if (*y_origin == 0)
-	{
-		// y stays the same
-	}
-	else if (*y_origin < 5)
-	{
-		*y_origin = *yf;
-	}
-	else
-	{
-		*y_origin = *yc;
-	}
 }

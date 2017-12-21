@@ -2,6 +2,7 @@
 
 #include "Particle.h"
 #include "gl/freeglut.h"
+#include <cmath>
 
 
 class field
@@ -15,14 +16,14 @@ class field
 		void keyboard_input(unsigned char key, int x, int y);
 		void add_space_curvature(int x, int y, int mass);
 		void update_particles();
-		void find_mass_centers(int x, int y, float *x_origin, float *y_origin, int *xf, int *yf, int *xc, int *yc);
+		void find_mass_centers(int x, int y, int *x_origin, int *y_origin, int *xf, int *yf, int *xc, int *yc);
 
 	private:
 
 	struct cell
 	{
 		int length_px;
-		float gravity;
+		float gravity = 0;
 		bool is_occupied = false;
 	};
 
