@@ -167,9 +167,17 @@ void field::update_particles()
 		// update postion from velocity
 		if (!(p.pos_x + p.vel_x_ >= window_size_ | p.pos_x + p.vel_x_  <= 0)) {
 			p.pos_x += p.vel_x_;
+		} else
+		{
+			p.vel_x_ = -p.vel_x_;
+			p.acl_x_ = 0;
 		}
 		if (!(p.pos_y + p.vel_y_  >= window_size_ | p.pos_y + p.vel_y_ <= 0)) {
 			p.pos_y += p.vel_y_;
+		} else
+		{
+			p.vel_y_ = -p.vel_y_;
+			p.acl_y_ = 0;
 		}
 		int updated_center_x;
 		int updated_center_y;
