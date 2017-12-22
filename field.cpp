@@ -30,6 +30,14 @@ field::field(int window_size)
 
 field::~field()
 {
+	const int cell_amt = window_size_ / (RADIUS * 2);
+
+	for(int i = 0; i < cell_amt; i++)
+	{
+		delete[] cells_[i];
+	}
+
+	delete [] cells_;
 }
 
 void field::spawn_particle(int button, int state, int x, int y)
@@ -167,7 +175,7 @@ void field::add_space_curvature(int x, int y, int mass)
 {
 
 	cells_[y][x].is_occupied = !cells_[y][x].is_occupied;
-	for (int grow = 1; grow < 5; grow++)
+	for (int grow = 1; grow < 8; grow++)
 	{
 		for(int i = (-1 * grow) + y ; i <= grow + y; i++)
 		{
@@ -192,6 +200,7 @@ void field::add_space_curvature(int x, int y, int mass)
 	}
 }
 
+// Function that is run constantly O(N)
 void field::update_particles()
 {
 	if (debug | freeze) return;
@@ -199,9 +208,13 @@ void field::update_particles()
 	{
 		int prev_center_x;
 		int prev_center_y;
+
+		// O(1)
 		find_mass_centers(p.pos_x, p.pos_y, &prev_center_x, &prev_center_y, nullptr, nullptr, nullptr, nullptr);
 
+		// O(1)
 		add_space_curvature(prev_center_x, prev_center_y, p.mass * (-1));
+
 		// update postion from velocity
 		if (!(p.pos_x + p.vel_x_ >= window_size_ | p.pos_x + p.vel_x_  <= 0)) {
 			p.pos_x += p.vel_x_;
@@ -219,8 +232,9 @@ void field::update_particles()
 		}
 		int updated_center_x;
 		int updated_center_y;
+		// O(1)
 		find_mass_centers(p.pos_x, p.pos_y, &updated_center_x, &updated_center_y, nullptr, nullptr, nullptr, nullptr);
-
+		// O(1)
 		add_space_curvature(updated_center_x, updated_center_y, p.mass);
 		// update velocity from acceleration
 		if (!(p.vel_x_ + p.acl_x_ > 3.5 | p.vel_x_ + p.acl_x_ < -3.5)) {
@@ -239,7 +253,7 @@ void field::update_particles()
 		bool left_z, right_z, up_z, down_z;
 		left_z = right_z = up_z = down_z = false;
 		int x_f, y_f, x_c, y_c;
-
+		// O(1)
 		find_mass_centers(p.pos_x, p.pos_y, &x_origin, &y_origin, &x_f, &y_f, &x_c, &y_c);
 
 		if (x_origin - 1 < 0) {
