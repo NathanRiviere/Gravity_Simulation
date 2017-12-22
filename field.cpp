@@ -6,6 +6,7 @@
 #define RADIUS 5
 #define MASS 2
 #define DEBUG 0
+#define MASS_B 25
 
 bool debug = false;
 bool freeze = false;
@@ -65,7 +66,29 @@ void field::spawn_particle(int button, int state, int x, int y)
 				break;
 			}
 		case GLUT_RIGHT_BUTTON:
-			break;
+			if (state == GLUT_DOWN) break;
+			else
+			{
+				std::cout << "right clicked" << std::endl;
+				int x_origin, y_origin;
+				int x_f, y_f, x_c, y_c;
+				find_mass_centers(x, y, &x_origin, &y_origin, &x_f, &y_f, &x_c, &y_c);
+				if (cells_[y_origin][x_origin].is_occupied) {
+#if DEBUG == 1 
+					std::cout << "Space occupied" << std::endl;
+
+#endif
+				}
+					blackholes_.emplace_back(x, y, RADIUS, MASS_B);
+#if DEBUG == 1 
+					std::cout << "Particle created" << std::endl;
+
+#endif
+					add_space_curvature(x_origin, y_origin, MASS_B);
+
+					cells_[y_origin][x_origin].is_occupied = true;
+					break;
+				}
 		}
 	} else if(freeze == true)
 	{
@@ -103,6 +126,21 @@ void field::display()
 		glEnd();
 	}
 
+	for (auto &p : blackholes_)
+	{
+		float pos_x = p.pos_x;
+		float pos_y = p.pos_y;
+		float radius = p.radius;
+
+
+		glColor3f(0, 0, 3);
+		glBegin(GL_POLYGON);
+		for (float a = 0; a < 2 * M_PI; a += 0.1) {
+			glVertex2f(radius * cos(a) + pos_x, radius * sin(a) + pos_y);
+		}
+		glEnd();
+	}
+	
 	glFlush();
 	
 }
@@ -142,7 +180,7 @@ void field::add_space_curvature(int x, int y, int mass)
 				if (i == y && j == x) cells_[i][j].gravity += mass;
 				else
 				{
-					cells_[i][j].gravity += (float) mass / (grow * 10);
+					cells_[i][j].gravity += (float) mass / (grow * 5);
 
 #if DEBUG == 1 
 					std::cout << "gravity at (" << i << ", " << j << ") is " << (float) cells_[i][j].gravity << std::endl;
@@ -185,10 +223,10 @@ void field::update_particles()
 
 		add_space_curvature(updated_center_x, updated_center_y, p.mass);
 		// update velocity from acceleration
-		if (!(p.vel_x_ + p.acl_x_ > 3 | p.vel_x_ + p.acl_x_ < -3)) {
+		if (!(p.vel_x_ + p.acl_x_ > 3.5 | p.vel_x_ + p.acl_x_ < -3.5)) {
 			p.vel_x_ += p.acl_x_;
 		} 
-		if (!(p.vel_y_ + p.acl_y_ > 3 | p.vel_y_ + p.acl_y_ < -3)) {
+		if (!(p.vel_y_ + p.acl_y_ > 3.5 | p.vel_y_ + p.acl_y_ < -3.5)) {
 			p.vel_y_ += p.acl_y_;
 
 		}
@@ -244,10 +282,20 @@ void field::update_particles()
 			if (!left_z) up_acl += cells_[y_origin - 1][x_origin - 1].gravity;
 		}
 
-		if (p.acl_x_ + right_acl - left_acl > 1 | p.acl_x_ + right_acl - left_acl < -1) {
+		if (p.acl_x_ + right_acl - left_acl > 1) {
+			p.acl_x_ = 1;
 			continue;
 		}
-		if (p.acl_y_ + down_acl - up_acl > 1 | p.acl_y_ + down_acl - up_acl < -1) {
+		else if (p.acl_x_ + right_acl - left_acl < -1) {
+			p.acl_x_ = -1;
+			continue;
+		}
+		if (p.acl_y_ + down_acl - up_acl > 1) {
+			p.acl_y_ = 1;
+			continue;
+		} else if (p.acl_y_ + down_acl - up_acl < -1)
+		{
+			p.acl_y_ = -1;
 			continue;
 		}
 		p.acl_x_ += right_acl - left_acl;

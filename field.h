@@ -28,6 +28,7 @@ class field
 	};
 
 	std::vector<particle> particles_;
+	std::vector<particle>blackholes_;
 	cell **cells_;
 
 	int window_size_;
